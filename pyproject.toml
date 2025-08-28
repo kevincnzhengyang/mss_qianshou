@@ -1,0 +1,28 @@
+[project]
+name = "mss-qianshou"
+version = "0.1.0"
+description = "miaosuan service qianshou for quote history data"
+authors = [
+    {name = "kevincnzhengyang",email = "kevin.cn.zhengyang@gmail.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = "3.13.5"
+dependencies = [
+    "qlib (>=0.0.2.dev20,<0.0.3)",
+    "yfinance (>=0.2.65,<0.3.0)",
+    "pandas (>=2.3.2,<3.0.0)",
+    "loguru (>=0.7.3,<0.8.0)",
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "mcp (>=1.13.1,<2.0.0)",
+    "fastapi (>=0.116.1,<0.117.0)",
+    "apscheduler (>=3.11.0,<4.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
