@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 22:49:51
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-08-28 22:10:37
+LastEditTime: 2025-08-29 12:23:19
 FilePath: /mss_qianshou/app/qianshou/hist_yfinance.py
 Description: 使用yfiannce 获取历史数据
 
@@ -38,19 +38,8 @@ JP_BIN_DIR = os.path.join(DATA_DIR, "jp_data")
 JP_CSV_DIR = os.path.join(JP_BIN_DIR, "csv")
 UK_BIN_DIR = os.path.join(DATA_DIR, "uk_data")
 UK_CSV_DIR = os.path.join(UK_BIN_DIR, "csv")
-os.makedirs(CN_BIN_DIR, exist_ok=True)
-os.makedirs(CN_CSV_DIR, exist_ok=True)
-os.makedirs(US_BIN_DIR, exist_ok=True)
-os.makedirs(US_CSV_DIR, exist_ok=True)
-os.makedirs(HK_BIN_DIR, exist_ok=True)
-os.makedirs(HK_CSV_DIR, exist_ok=True)
-os.makedirs(TW_BIN_DIR, exist_ok=True)
-os.makedirs(TW_CSV_DIR, exist_ok=True)
-os.makedirs(JP_BIN_DIR, exist_ok=True)
-os.makedirs(JP_CSV_DIR, exist_ok=True)
-os.makedirs(UK_BIN_DIR, exist_ok=True)
-os.makedirs(UK_CSV_DIR, exist_ok=True)
 
+# 各个市场数据路径
 _MARKET_DIR = {
     'US': (US_CSV_DIR, US_BIN_DIR),
     'HK': (HK_CSV_DIR, HK_BIN_DIR),
@@ -60,9 +49,19 @@ _MARKET_DIR = {
     'UK': (UK_CSV_DIR, UK_BIN_DIR)
 }
 
+# 初始化各个子路径和文件
+for mkt in _MARKET_DIR.keys():
+    os.makedirs(_MARKET_DIR[mkt][0], exist_ok=True)
+    os.makedirs(_MARKET_DIR[mkt][1], exist_ok=True)
+
+    os.makedirs(os.path.join(_MARKET_DIR[mkt][1], "calendars"), exist_ok=True)
+    os.makedirs(os.path.join(_MARKET_DIR[mkt][1], "features"), exist_ok=True)
+    os.makedirs(os.path.join(_MARKET_DIR[mkt][1], "instruments"), exist_ok=True)
+    
+
 # 准备导出BIN格式的工具脚本
 sys.path.append(os.path.join(QLIB_PATH, "scripts"))
-from dump_bin import DumpDataUpdate
+from dump_bin import DumpDataUpdate, DumpDataAll
 
 
 def _format_dataframe(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
@@ -95,25 +94,34 @@ def _format_dataframe(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
 def _update_equity(e: Equity, markets: set):
     yf_name = e.to_yfinance_symbol()
     ft_name = e.to_futu_symbol()
-    csv_file = f"{ft_name}.csv"
+    mkt = None
     logger.debug(f"准备更新标的{yf_name}==={ft_name}")
 
     match e.market:
         case 'US':
             markets.add('US')
+            mkt = 'US'
         case 'HK':
             markets.add('HK')
+            mkt = 'HK'
         case 'SH' | 'SZ':
             markets.add('CN')
+            mkt = 'CN'
         case 'TW':
             markets.add('TW')
+            mkt = 'TW'
         case 'JP':
             markets.add('JP')
+            mkt = 'JP'
         case 'UK':
             markets.add('UK')
+            mkt = 'UK'
         case _:
             raise ValueError(f"不支持的市场: {e.market}")
     
+    csv_file = os.path.join(_MARKET_DIR[mkt][0], f"{ft_name}.csv")
+    logger.info(f"csv file: {csv_file}")
+
     # 读取已有csv
     if os.path.exists(csv_file):
         df = pd.read_csv(csv_file, index_col=0, parse_dates=True)
@@ -156,7 +164,8 @@ def yfinance_update_daily():
     
     # 转换为Qlib的BIN格式
     for mkt in list(markets):
-        dump = DumpDataUpdate(
+        # dump = DumpDataUpdate(
+        dump = DumpDataAll(
             data_path=_MARKET_DIR[mkt][0],
             qlib_dir=_MARKET_DIR[mkt][1],
             exclude_fields="date,symbol")

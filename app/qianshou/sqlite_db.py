@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 20:58:59
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-08-28 22:10:15
+LastEditTime: 2025-08-29 11:43:38
 FilePath: /mss_qianshou/app/qianshou/sqlite_db.py
 Description: 
 
@@ -56,8 +56,8 @@ def init_db():
 def add_equity(e: Equity) -> Any:
     conn = sqlite3.connect(DB_FILE)
     cur = conn.cursor()
-    cur.execute("INSERT INTO equities(symbol,market,note,enabled,last_date,updated_at) VALUES(?,?,?,?,?,?,?,CURRENT_TIMESTAMP)",
-                (e.symbol.upper(), e.market.upper(), e.note, int(e.enabled), e.last_date))
+    cur.execute("INSERT INTO equities(symbol,market,note,enabled,updated_at) VALUES(?,?,?,?,CURRENT_TIMESTAMP)",
+                (e.symbol.upper(), e.market.upper(), e.note, int(e.enabled)))
     conn.commit()
     rule_id = cur.lastrowid
     conn.close()

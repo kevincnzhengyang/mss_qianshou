@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 21:12:28
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-08-28 20:50:41
+LastEditTime: 2025-08-29 11:47:24
 FilePath: /mss_qianshou/app/qianshou/models.py
 Description: 数据模型
 
@@ -17,7 +17,7 @@ class Equity(BaseModel):
     market: str         # us, sh, sz, hk, tw, tokyo, london
     note: str = ""
     enabled: bool = True
-    last_date: str = ""
+    last_date: str  | None = None
     updated_at: str | None = None
 
     def to_yfinance_symbol(self) -> str:

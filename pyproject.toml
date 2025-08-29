@@ -9,14 +9,16 @@ license = {text = "MIT"}
 readme = "README.md"
 requires-python = "3.13.5"
 dependencies = [
-    "qlib (>=0.0.2.dev20,<0.0.3)",
     "yfinance (>=0.2.65,<0.3.0)",
     "pandas (>=2.3.2,<3.0.0)",
     "loguru (>=0.7.3,<0.8.0)",
     "python-dotenv (>=1.1.1,<2.0.0)",
     "mcp (>=1.13.1,<2.0.0)",
     "fastapi (>=0.116.1,<0.117.0)",
-    "apscheduler (>=3.11.0,<4.0.0)"
+    "apscheduler (>=3.11.0,<4.0.0)",
+    "fire (>=0.7.1,<0.8.0)",
+    "tqdm (>=4.67.1,<5.0.0)",
+    "qlib (>=0.9.7,<1.0.0)"
 ]
 
 
