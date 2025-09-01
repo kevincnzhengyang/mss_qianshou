@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 20:55:11
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-08-29 11:13:19
+LastEditTime: 2025-09-01 21:47:14
 FilePath: /mss_qianshou/app/main.py
 Description: 
 
@@ -20,6 +20,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from qianshou.models import Equity
 from qianshou.sqlite_db import *
 from qianshou.hist_yfinance import yfinance_update_daily
+from qianshou.hist_futu import futu_update_daily
 
 # 加载环境变量
 load_dotenv()
@@ -28,6 +29,7 @@ API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "23000"))
 CRON_HOUR = int(os.getenv("CRON_HOUR", "6"))
 CRON_MINUTE = int(os.getenv("CRON_MINUTE", "0"))
+HIST_CHANNEL = os.getenv("HIST_CHANNEL", "YFINANCE").upper()
 
 # 记录日志到文件，日志文件超过500MB自动轮转
 logger.add(LOG_FILE, rotation="50 MB")
@@ -39,10 +41,19 @@ scheduler = AsyncIOScheduler()
 async def lifespan(app: FastAPI):
     logger.info("Starting up...")
     init_db()
-    scheduler.add_job(yfinance_update_daily, "cron", 
-                      day_of_week="1-5", # 每周二到周六
-                      hour=CRON_HOUR, minute=CRON_MINUTE,
-                      id="yfinance_daily")
+    if HIST_CHANNEL == "YFINANCE":
+        scheduler.add_job(yfinance_update_daily, "cron", 
+                        day_of_week="1-5", # 每周二到周六
+                        hour=CRON_HOUR, minute=CRON_MINUTE,
+                        id="yfinance_daily")
+    elif HIST_CHANNEL == "FUTU":
+        scheduler.add_job(futu_update_daily, "cron", 
+                        day_of_week="1-5", # 每周二到周六
+                        hour=CRON_HOUR, minute=CRON_MINUTE,
+                        id="futu_daily")
+    else:
+        logger.error(f"不支持的行情频道：{HIST_CHANNEL}")
+        exit(1)
     scheduler.start()
     yield
     scheduler.shutdown()
@@ -81,6 +92,11 @@ def delete_equity_by_id_api(e_id: int):
 @app.post("/update/yfinance/daily")
 def update_yfinance_daily_api():
     yfinance_update_daily()
+    return {"status":"ok"}
+
+@app.post("/update/futu/daily")
+def update_futu_daily_api():
+    futu_update_daily()
     return {"status":"ok"}
 
 if __name__ == "__main__":

@@ -2,14 +2,15 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 21:12:28
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-08-29 11:47:24
+LastEditTime: 2025-09-01 09:38:57
 FilePath: /mss_qianshou/app/qianshou/models.py
 Description: 数据模型
 
 Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
 '''
 
-from pydantic import BaseModel
+from typing import List
+from pydantic import BaseModel, Field
 
 class Equity(BaseModel):
     id: int | None = None
@@ -48,3 +49,12 @@ class Equity(BaseModel):
                 return f"HK.{self.symbol.rjust(5, '0')}"
             else:
                 raise ValueError(f"不支持的市场: {self.market}")
+
+class IndicatorDef(BaseModel):
+    name: str = Field(..., regex=r"^[A-Z0-9_]+$")  # type: ignore
+    formula: str
+
+class IndicatorSet(BaseModel):
+    set_name: str
+    indicators: List[IndicatorDef]
+    

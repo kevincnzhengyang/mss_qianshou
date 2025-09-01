@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 22:49:51
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-08-29 12:23:19
+LastEditTime: 2025-09-01 21:04:30
 FilePath: /mss_qianshou/app/qianshou/hist_yfinance.py
 Description: 使用yfiannce 获取历史数据
 
@@ -19,49 +19,8 @@ from dotenv import load_dotenv
 
 from .models import Equity
 from .sqlite_db import get_equities, set_equities_last
-
-
-# 加载环境变量
-BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(dotenv_path=BASE_DIR / ".." / ".env")
-DATA_DIR = os.path.expanduser(os.getenv("DATA_DIR", "~/.qlib/qlib_data"))
-QLIB_PATH = os.path.expanduser(os.getenv("QLIB_PATH", "~/Quanter/qlib"))
-CN_BIN_DIR = os.path.join(DATA_DIR, "cn_data")
-CN_CSV_DIR = os.path.join(CN_BIN_DIR, "csv")
-US_BIN_DIR = os.path.join(DATA_DIR, "us_data")
-US_CSV_DIR = os.path.join(US_BIN_DIR, "csv")
-HK_BIN_DIR = os.path.join(DATA_DIR, "hk_data")
-HK_CSV_DIR = os.path.join(HK_BIN_DIR, "csv")
-TW_BIN_DIR = os.path.join(DATA_DIR, "tw_data")
-TW_CSV_DIR = os.path.join(TW_BIN_DIR, "csv")
-JP_BIN_DIR = os.path.join(DATA_DIR, "jp_data")
-JP_CSV_DIR = os.path.join(JP_BIN_DIR, "csv")
-UK_BIN_DIR = os.path.join(DATA_DIR, "uk_data")
-UK_CSV_DIR = os.path.join(UK_BIN_DIR, "csv")
-
-# 各个市场数据路径
-_MARKET_DIR = {
-    'US': (US_CSV_DIR, US_BIN_DIR),
-    'HK': (HK_CSV_DIR, HK_BIN_DIR),
-    'CN': (CN_CSV_DIR, CN_BIN_DIR),
-    'TW': (TW_CSV_DIR, TW_BIN_DIR),
-    'JP': (JP_CSV_DIR, JP_BIN_DIR),
-    'UK': (UK_CSV_DIR, UK_BIN_DIR)
-}
-
-# 初始化各个子路径和文件
-for mkt in _MARKET_DIR.keys():
-    os.makedirs(_MARKET_DIR[mkt][0], exist_ok=True)
-    os.makedirs(_MARKET_DIR[mkt][1], exist_ok=True)
-
-    os.makedirs(os.path.join(_MARKET_DIR[mkt][1], "calendars"), exist_ok=True)
-    os.makedirs(os.path.join(_MARKET_DIR[mkt][1], "features"), exist_ok=True)
-    os.makedirs(os.path.join(_MARKET_DIR[mkt][1], "instruments"), exist_ok=True)
-    
-
-# 准备导出BIN格式的工具脚本
-sys.path.append(os.path.join(QLIB_PATH, "scripts"))
-from dump_bin import DumpDataUpdate, DumpDataAll
+from .indicator_tools import IndicatorManager
+from .bin_tools import *
 
 
 def _format_dataframe(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
@@ -91,40 +50,17 @@ def _format_dataframe(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
     # 将date作为index准备与已有数据合并
     return df.set_index("date")
 
-def _update_equity(e: Equity, markets: set):
+def _update_equity(e: Equity, manager: IndicatorManager):
     yf_name = e.to_yfinance_symbol()
     ft_name = e.to_futu_symbol()
-    mkt = None
     logger.debug(f"准备更新标的{yf_name}==={ft_name}")
-
-    match e.market:
-        case 'US':
-            markets.add('US')
-            mkt = 'US'
-        case 'HK':
-            markets.add('HK')
-            mkt = 'HK'
-        case 'SH' | 'SZ':
-            markets.add('CN')
-            mkt = 'CN'
-        case 'TW':
-            markets.add('TW')
-            mkt = 'TW'
-        case 'JP':
-            markets.add('JP')
-            mkt = 'JP'
-        case 'UK':
-            markets.add('UK')
-            mkt = 'UK'
-        case _:
-            raise ValueError(f"不支持的市场: {e.market}")
     
-    csv_file = os.path.join(_MARKET_DIR[mkt][0], f"{ft_name}.csv")
-    logger.info(f"csv file: {csv_file}")
+    ocsv_file = os.path.join(OCSV_DIR, f"{ft_name}.csv")
+    logger.info(f"原始数据文件: {ocsv_file}")
 
     # 读取已有csv
-    if os.path.exists(csv_file):
-        df = pd.read_csv(csv_file, index_col=0, parse_dates=True)
+    if os.path.exists(ocsv_file):
+        df = pd.read_csv(ocsv_file, index_col=0, parse_dates=True)
         last_date = df.index.max()
         start_date = last_date + timedelta(days=1)
     else:
@@ -140,7 +76,7 @@ def _update_equity(e: Equity, markets: set):
                                end=today.strftime("%Y-%m-%d"), 
                                interval="1d")
         if new_data is None or new_data.empty:
-            logger.info(f"Empty quote for {yf_name} from {start_date} to {today}")
+            logger.info(f"没有历史行情数据 {yf_name} from {start_date} to {today}")
             return
         
         # 重新整理格式
@@ -149,27 +85,31 @@ def _update_equity(e: Equity, markets: set):
         # 合并数据
         df = pd.concat([df, new_data])
 
-        # 保存CSV
-        df.to_csv(csv_file)
-        logger.info(f"Update {len(new_data)} quote for {yf_name} from {start_date} to {today}")
+        # 保存原始的CSV
+        df.to_csv(ocsv_file)
+
+        # 计算各种指标
+        df_with_ind = manager.calculate(df) 
+
+        # 保存有指标结果的CSV
+        csv_file = os.path.join(CSV_DIR, f"{ft_name}.csv")
+        df_with_ind.to_csv(csv_file)
+        logger.info(f"更新数据文件: {csv_file}, 总记录数: {len(new_data)} => {yf_name} {start_date} - {today}")
+        logger.info(f"待分析数据文件: {csv_file}")
     else:
-        logger.warning(f"try to download {yf_name}: {start_date} > {today}")
+        logger.warning(f"尝试下载行情数据失败: {yf_name}: {start_date} - {today}")
 
 def yfinance_update_daily():
-    markets = set()
+    # 加载指标管理
+    manager = IndicatorManager()
+    manager.load_all_sets()
 
     for row in get_equities(only_valid=True):
         e = Equity(**dict(row))
-        _update_equity(e, markets)
+        _update_equity(e, manager)
     
     # 转换为Qlib的BIN格式
-    for mkt in list(markets):
-        # dump = DumpDataUpdate(
-        dump = DumpDataAll(
-            data_path=_MARKET_DIR[mkt][0],
-            qlib_dir=_MARKET_DIR[mkt][1],
-            exclude_fields="date,symbol")
-        dump.dump()
-        logger.info(f"将{mkt}数据由CSV转换为BIN")
+    convert_csv_to_bin()
+    
+    # 更新最后更新时间
     set_equities_last()
-

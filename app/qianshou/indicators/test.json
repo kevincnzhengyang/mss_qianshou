@@ -1,0 +1,37 @@
+{
+  "set_name": "tech_set",
+  "indicators": [
+    {
+      "name": "MA10",
+      "formula": "MA(CLOSE, 10)"
+    },
+    {
+      "name": "RSI14",
+      "formula": "RSI(CLOSE, 14)"
+    },
+    {
+      "name": "KDJ_K",
+      "formula": "SMA((CLOSE-LLV(LOW,9))/(HHV(HIGH,9)-LLV(LOW,9))*100,3,1)"
+    },
+    {
+      "name": "MACD_DIF",
+      "formula": "EMA(CLOSE,12) - EMA(CLOSE,26)"
+    },
+    {
+      "name": "MACD_DEA",
+      "formula": "EMA(MACD_DIF,9)"
+    },
+    {
+      "name": "MACD_BAR",
+      "formula": "(MACD_DIF - MACD_DEA) * 2"
+    },
+    {
+      "name": "BOLL_UPPER",
+      "formula": "MA(CLOSE,20) + 2*STD(CLOSE,20)"
+    },
+    {
+      "name": "BOLL_LOWER",
+      "formula": "MA(CLOSE,20) - 2*STD(CLOSE,20)"
+    }
+  ]
+}
