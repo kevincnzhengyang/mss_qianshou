@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-09-01 09:13:04
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-09-01 21:12:05
+LastEditTime: 2025-09-02 19:38:35
 FilePath: /mss_qianshou/app/qianshou/indicator_tools.py
 Description: 
 
@@ -62,6 +62,7 @@ class IndicatorEngine:
         self.sets[indicator_set.set_name] = {
             ind.name: ind.formula for ind in indicator_set.indicators
         }
+        logger.info(f"✅ 已加载指标集 {indicator_set.set_name}")
 
     def calculate_set(self, df: pd.DataFrame, set_name: str) -> pd.DataFrame:
         if set_name not in self.sets:
@@ -87,32 +88,29 @@ class IndicatorManager:
         os.makedirs(INDS_DIR, exist_ok=True)
         self.indicators_dir = INDS_DIR
         self.engine = IndicatorEngine()
-        self.loaded_sets: Dict[str, Dict[str, str]] = {}
 
     def load_all_sets(self):
         """批量加载目录下的所有指标集"""
+        logger.info(f"指标文件路径 {self.indicators_dir}")
         for fname in os.listdir(self.indicators_dir):
             if fname.endswith(".json"):
                 path = os.path.join(self.indicators_dir, fname)
-                with open(path, "r") as f:
-                    data = json.load(f)
-                try:
-                    indicator_set = IndicatorSet(**data)
-                    self.loaded_sets[indicator_set.set_name] = {
-                        ind.name: ind.formula for ind in indicator_set.indicators
-                    }
-                except Exception as e:
-                    logger.error(f"❌ {fname} 验证失败: {e}")
+                self.engine.load_set_from_file(path)
+                
 
     def list_sets(self) -> List[str]:
         """列出已加载的指标集名字"""
-        return list(self.loaded_sets.keys())
+        return list(self.engine.sets.keys())
 
-    def calculate(self, df):
+    def calculate(self, df: pd.DataFrame) -> pd.DataFrame:
+        if df is None or df.empty:
+            return df
+        
         """计算所有启用的指标"""
         result = df.copy()
-        for set_name in self.loaded_sets:
+        for set_name in self.engine.sets.keys():
             result = self.engine.calculate_set(result, set_name)
+            logger.info(f"计算指标集{set_name}")
         return result
 
 

@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 21:12:28
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-09-01 09:38:57
+LastEditTime: 2025-09-02 18:45:15
 FilePath: /mss_qianshou/app/qianshou/models.py
 Description: 数据模型
 
@@ -51,7 +51,7 @@ class Equity(BaseModel):
                 raise ValueError(f"不支持的市场: {self.market}")
 
 class IndicatorDef(BaseModel):
-    name: str = Field(..., regex=r"^[A-Z0-9_]+$")  # type: ignore
+    name: str = Field(..., pattern=r"^[A-Z0-9_]+$")  # type: ignore
     formula: str
 
 class IndicatorSet(BaseModel):

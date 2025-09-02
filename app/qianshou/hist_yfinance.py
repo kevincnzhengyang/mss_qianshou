@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 22:49:51
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-09-01 21:04:30
+LastEditTime: 2025-09-02 18:58:22
 FilePath: /mss_qianshou/app/qianshou/hist_yfinance.py
 Description: 使用yfiannce 获取历史数据
 
@@ -74,30 +74,34 @@ def _update_equity(e: Equity, manager: IndicatorManager):
         new_data = yf.download(yf_name, 
                                start=start_date.strftime("%Y-%m-%d"), 
                                end=today.strftime("%Y-%m-%d"), 
-                               interval="1d")
+                               interval="1d",
+                               auto_adjust=True)
         if new_data is None or new_data.empty:
             logger.info(f"没有历史行情数据 {yf_name} from {start_date} to {today}")
-            return
-        
-        # 重新整理格式
-        new_data = _format_dataframe(new_data, ft_name)
+        else:
+            # 重新整理格式
+            new_data = _format_dataframe(new_data, ft_name)
 
-        # 合并数据
-        df = pd.concat([df, new_data])
+            # 合并数据
+            df = pd.concat([df, new_data])
 
-        # 保存原始的CSV
-        df.to_csv(ocsv_file)
-
-        # 计算各种指标
-        df_with_ind = manager.calculate(df) 
-
-        # 保存有指标结果的CSV
-        csv_file = os.path.join(CSV_DIR, f"{ft_name}.csv")
-        df_with_ind.to_csv(csv_file)
-        logger.info(f"更新数据文件: {csv_file}, 总记录数: {len(new_data)} => {yf_name} {start_date} - {today}")
-        logger.info(f"待分析数据文件: {csv_file}")
+            # 保存原始的CSV
+            df.to_csv(ocsv_file)
+            logger.info(f"更新数据文件: {ocsv_file}, 总记录数: {len(new_data)} => {yf_name} {start_date} - {today}")
     else:
         logger.warning(f"尝试下载行情数据失败: {yf_name}: {start_date} - {today}")
+    
+    if df is None or df.empty:
+        logger.info(f"没有原始数据需要计算指标 {yf_name}")
+        return
+    
+    # 计算各种指标，即使数据无更新，自定义指标库也可能已发生变化，重新计算
+    df_with_ind = manager.calculate(df) 
+
+    # 保存有指标结果的CSV
+    csv_file = os.path.join(CSV_DIR, f"{ft_name}.csv")
+    df_with_ind.to_csv(csv_file)
+    logger.info(f"生成待分析数据文件: {csv_file}")
 
 def yfinance_update_daily():
     # 加载指标管理
