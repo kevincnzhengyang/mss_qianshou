@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-09-01 21:06:32
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-09-02 20:06:33
+LastEditTime: 2025-09-02 20:13:10
 FilePath: /mss_qianshou/app/qianshou/hist_futu.py
 Description: 
 
@@ -101,7 +101,6 @@ def _update_equity(e: Equity, manager: IndicatorManager, ctx: OpenQuoteContext):
         else:
             # 合并数据
             df = pd.concat(all_data)
-            print(f"==== dataframe: {df.tail(5)}")
 
             # 保存原始的CSV
             df.to_csv(ocsv_file)
