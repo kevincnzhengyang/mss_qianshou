@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-09-01 09:13:04
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-09-02 19:38:35
+LastEditTime: 2025-09-05 18:41:07
 FilePath: /mss_qianshou/app/qianshou/indicator_tools.py
 Description: 
 
@@ -38,12 +38,39 @@ class IndicatorEngine:
             "STD": lambda x, n: x.rolling(n).std(),
             "MAX": lambda x, n: x.rolling(n).max(),
             "MIN": lambda x, n: x.rolling(n).min(),
-            "SMA": lambda x, n, m: x.ewm(alpha=m/n, adjust=False).mean(),
-            "EMA": lambda x, n: x.ewm(span=n, adjust=False).mean(),
+
+            # 均线类
+            "SMA": lambda x, n: talib.SMA(x, n),
+            "EMA": lambda x, n: talib.EMA(x, n),
+            "WMA": lambda x, n: talib.WMA(x, n),
+            "KAMA": lambda x, n: talib.KAMA(x, n),      # Kaufman 自适应均线
+            "MAMA": lambda x, f, s: talib.MAMA(x, f, s),  # MESA 自适应均线
+            # 动量类
             "RSI": lambda x, n: talib.RSI(x, n),
+            "MACD": lambda c, f, s, n: talib.MACD(c, f, s, n),
+            "KDJ": lambda h, l, c, fk, sk, sd: talib.STOCH(h, l, c, fk, sk, sd),
+            "ADX": lambda h, l, c, n: talib.ADX(h, l, c, n),   # 趋势强度
+            "CCI": lambda h, l, c, n: talib.CCI(h, l, c, n),
+            "MOM": lambda c, n: talib.MOM(c, n),    # 动量
+            "ROC": lambda c, n: talib.ROC(c, n),    # 变化率
+            # 波动率类
+            "ATR": lambda h, l, c, n: talib.ATR(h, l, c, n),
+            "TRANGE": lambda h, l, c: talib.TRANGE(h, l, c),    # 真实波幅
+            # 价量
+            "OBV": lambda c, v: talib.OBV(c, v),        # 能量潮
+            "AD": lambda h, l, c, v: talib.AD(h, l, c, v),  # Chaikin A/D 线
+            "ADOSC": lambda h, l, c, v, f, s: talib.ADOSC(h, l, c, v, f, s),
+            "MFI": lambda h, l, c, v, n: talib.MFI(h, l, c, v, n),   # 资金流量指数
+            # 通道类
+            "BBANDS": lambda c, n, u, d, t: talib.BBANDS(c, n, u, d, t),  # 布林带
+            "SAR": lambda h, l, a, m: talib.SAR(h, l, a, m),  # 抛物线指标
+            # 统计函数
+            "CORREL": lambda x, y, n: talib.CORREL(x, y, n),    # 相关系数
+            "STDDEV": lambda x, n: talib.STDDEV(x, n),    # 标准差
+            "VAR": lambda x, n, d: talib.VAR(x, n, d),    # 方差
 
             # 扩展运算
-            "LOG": np.log, "EXP": np.exp, "SQRT": np.sqrt, "POW": np.power,
+            "LOG": np.log, "EXP": np.exp, "SQRT": np.sqrt, "POW": np.power, "ABS": np.abs,
 
             # 金融指标扩展
             "LLV": lambda x, n: x.rolling(n).min(),
@@ -76,7 +103,7 @@ class IndicatorEngine:
         })
         for name, formula in self.sets[set_name].items():
             try:
-                result[name] = eval(formula, {}, context)
+                result[name] = eval(formula, {"__builtins__": None}, context)
                 context[name] = result[name]   # 允许公式引用前面计算的指标
             except Exception as e:
                 logger.error(f"⚠️ {set_name}.{name} 计算失败: {formula} -> {e}")
