@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 22:49:51
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-09-02 18:58:22
+LastEditTime: 2025-09-04 09:17:20
 FilePath: /mss_qianshou/app/qianshou/hist_yfinance.py
 Description: 使用yfiannce 获取历史数据
 
@@ -22,6 +22,11 @@ from .sqlite_db import get_equities, set_equities_last
 from .indicator_tools import IndicatorManager
 from .bin_tools import *
 
+
+def _has_not_stock(ticker: str) -> bool:
+    stock = yf.Ticker(ticker)
+    info = stock.info   # ⚠️ 这里会触发一次请求
+    return (info is None or info == {})
 
 def _format_dataframe(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
     # 如果返回 MultiIndex（某些版本可能出现），统一处理：
@@ -54,6 +59,9 @@ def _update_equity(e: Equity, manager: IndicatorManager):
     yf_name = e.to_yfinance_symbol()
     ft_name = e.to_futu_symbol()
     logger.debug(f"准备更新标的{yf_name}==={ft_name}")
+    if _has_not_stock(yf_name):
+        logger.info(f"没有行情数据 {yf_name}")
+        return
     
     ocsv_file = os.path.join(OCSV_DIR, f"{ft_name}.csv")
     logger.info(f"原始数据文件: {ocsv_file}")

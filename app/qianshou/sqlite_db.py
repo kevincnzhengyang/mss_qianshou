@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 20:58:59
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-08-29 11:43:38
+LastEditTime: 2025-09-04 19:59:43
 FilePath: /mss_qianshou/app/qianshou/sqlite_db.py
 Description: 
 
@@ -43,7 +43,7 @@ def init_db():
     # 创建表
     cur.execute("""CREATE TABLE IF NOT EXISTS equities(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        symbol TEXT NOT NULL, market TEXT NOT NULL, 
+        symbol TEXT NOT NULL UNIQUE, market TEXT NOT NULL, 
         note TEXT, enabled INTEGER DEFAULT 1, 
         last_date TIMESTAMP, updated_at TIMESTAMP
     )""")
@@ -79,6 +79,13 @@ def get_equity(e_id: int) -> Any:
     row = conn.execute("SELECT * FROM equities WHERE id=?", (e_id,)).fetchone()
     conn.close()
     return row
+
+def if_not_exist_equity(symbol: str, market: str) -> bool:
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute("SELECT * FROM equities WHERE symbol=?", (symbol.upper(),)).fetchone()
+    conn.close()
+    return (row is None)
 
 def update_equity(e_id: int, e: Equity) -> Any:
     conn = sqlite3.connect(DB_FILE)

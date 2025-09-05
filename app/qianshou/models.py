@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 21:12:28
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-09-02 18:45:15
+LastEditTime: 2025-09-05 09:01:00
 FilePath: /mss_qianshou/app/qianshou/models.py
 Description: 数据模型
 
@@ -24,31 +24,40 @@ class Equity(BaseModel):
     def to_yfinance_symbol(self) -> str:
         """转换为yfinance格式的symbol"""
         if self.market == "US":
-            return self.symbol.upper()
+            return self.symbol
         elif self.market == "SH":
             return f"{self.symbol}.SS"
         elif self.market in ["SZ", "HK", "TW"]:
-            return f"{self.symbol.upper()}.{self.market}"
+            return f"{self.symbol}.{self.market}"
         elif self.market == "TOKYO":
-            return f"{self.symbol.upper()}.T"
+            return f"{self.symbol}.T"
         elif self.market == "LONDON":
-            return f"{self.symbol.upper()}.L"
+            return f"{self.symbol}.L"
         else:
-            raise ValueError(f"不支持的市场: {self.market}")
+            raise ValueError(f"YFinance不支持的市场: {self.market}")
     
     def to_futu_symbol(self) -> str:
         """转换为FutuOpenAPI的symbol"""
-        if self.symbol.upper() == "^HSI":
+        if self.symbol == "^HSI":
             return "HK.800000"
         else:
             if self.market in ["US", "TW", "TOKYO", "LONDON"]:
-                return f"{self.market}.{self.symbol.upper()}"
+                return f"{self.market}.{self.symbol}"
             elif self.market in ["SH", "SZ"]:
                 return f"{self.market}.{self.symbol.rjust(6, '0')}"
             elif self.market == "HK":
                 return f"HK.{self.symbol.rjust(5, '0')}"
             else:
-                raise ValueError(f"不支持的市场: {self.market}")
+                raise ValueError(f"FutuAPI不支持的市场: {self.market}")
+            
+    def to_akshare_name(self) -> str:
+        """转换为AkShare的symbol"""
+        if self.market in ["SH", "SZ"]:
+            return f"{self.symbol.rjust(6, '0')}"
+        elif self.market == "HK":
+            return f"{self.symbol.rjust(5, '0')}"
+        else:
+            raise ValueError(f"AkShare不支持的市场: {self.market}")
 
 class IndicatorDef(BaseModel):
     name: str = Field(..., pattern=r"^[A-Z0-9_]+$")  # type: ignore
