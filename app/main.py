@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 20:55:11
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-09-04 21:49:47
+LastEditTime: 2025-09-05 10:12:44
 FilePath: /mss_qianshou/app/main.py
 Description: 
 
@@ -25,6 +25,7 @@ from qianshou.account_futu import futu_sync_group
 # 加载环境变量
 load_dotenv()
 LOG_FILE = os.getenv("LOG_FILE", "chuanyin.log")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "23000"))
 CRON_HOUR = int(os.getenv("CRON_HOUR", "6"))
@@ -32,7 +33,7 @@ CRON_MINUTE = int(os.getenv("CRON_MINUTE", "0"))
 SYNC_INTERV_M = int(os.getenv("SYNC_INTERV_M", "5"))
 
 # 记录日志到文件，日志文件超过500MB自动轮转
-logger.add(LOG_FILE, rotation="50 MB")
+logger.add(LOG_FILE, level=LOG_LEVEL, rotation="50 MB", retention=5)
 
 # 定时任务
 scheduler = AsyncIOScheduler()
