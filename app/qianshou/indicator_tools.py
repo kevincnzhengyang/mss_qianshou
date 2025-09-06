@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-09-01 09:13:04
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-09-05 18:41:07
+LastEditTime: 2025-09-06 08:27:33
 FilePath: /mss_qianshou/app/qianshou/indicator_tools.py
 Description: 
 
@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Dict, List
 from loguru import logger
 from dotenv import load_dotenv
+from pydantic import ValidationError
 
 from .models import IndicatorSet
 
@@ -23,6 +24,8 @@ from .models import IndicatorSet
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(dotenv_path=BASE_DIR / ".." / ".env")
 INDS_DIR = os.path.join(BASE_DIR, ".." , os.getenv("INDS_DIR", "indicators"))
+
+os.makedirs(INDS_DIR, exist_ok=True)
 
 
 class IndicatorEngine:
@@ -78,7 +81,6 @@ class IndicatorEngine:
         }
 
     def load_set_from_file(self, path: str):
-        from pydantic import ValidationError
         with open(path, "r") as f:
             data = json.load(f)
         try:
@@ -112,7 +114,6 @@ class IndicatorEngine:
 
 class IndicatorManager:
     def __init__(self):
-        os.makedirs(INDS_DIR, exist_ok=True)
         self.indicators_dir = INDS_DIR
         self.engine = IndicatorEngine()
 
@@ -174,3 +175,20 @@ def formulas_to_json(set_name: str, indicators: Dict[str, str], out_path: str):
     with open(out_path, "w") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
     logger.info(f"✅ 已生成指标集 {set_name} -> {out_path}")
+
+def load_all_indicators() -> List[IndicatorSet]:
+    iset = []
+    for fname in os.listdir(INDS_DIR):
+        if not fname.endswith(".json"):
+            continue
+        path = os.path.join(INDS_DIR, fname)
+        with open(path, "r") as f:
+            data = json.load(f)
+            try:
+                indicator_set = IndicatorSet(**data)
+                iset.append(indicator_set)
+                logger.debug(f"已加载指标集{indicator_set.set_name}")
+            except ValidationError as e:
+                logger.error(f"❌ 文件 {path} 验证失败:\n{e}")
+                continue
+    return iset

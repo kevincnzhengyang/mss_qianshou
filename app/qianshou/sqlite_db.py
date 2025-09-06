@@ -2,7 +2,7 @@
 Author: kevincnzhengyang kevin.cn.zhengyang@gmail.com
 Date: 2025-08-27 20:58:59
 LastEditors: kevincnzhengyang kevin.cn.zhengyang@gmail.com
-LastEditTime: 2025-09-04 19:59:43
+LastEditTime: 2025-09-06 16:03:40
 FilePath: /mss_qianshou/app/qianshou/sqlite_db.py
 Description: 
 
@@ -80,7 +80,14 @@ def get_equity(e_id: int) -> Any:
     conn.close()
     return row
 
-def if_not_exist_equity(symbol: str, market: str) -> bool:
+def get_equity_by_symbol(symbol: str) -> Any:
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute("SELECT * FROM equities WHERE symbol=?", (symbol.upper(),)).fetchone()
+    conn.close()
+    return row
+
+def if_not_exist_equity(symbol: str) -> bool:
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     row = conn.execute("SELECT * FROM equities WHERE symbol=?", (symbol.upper(),)).fetchone()
@@ -110,5 +117,15 @@ def delete_equity(rule_id: int) -> None:
 def purge_equity(rule_id: int) -> None:
     conn = sqlite3.connect(DB_FILE)
     conn.execute("DELETE FROM equities WHERE id=?", (rule_id,))
+    conn.commit()
+    conn.close()
+
+def clear_others_equities(l: list) -> None:
+    if not isinstance(l, list) or len(l) == 0:
+        return
+    ph = ','.join('?' for _ in l)
+    conn = sqlite3.connect(DB_FILE)
+    conn.execute(f"DELETE FROM equities WHERE symbol NOT IN ({ph})", l)
+    logger.debug(f"clear sql = DELETE FROM equities WHERE symbol NOT IN ({ph}) {l}")
     conn.commit()
     conn.close()
